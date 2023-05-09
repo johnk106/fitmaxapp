@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import get_object_or_404, render,redirect
 from django.contrib import messages
 from django.urls import reverse
 from django.http import HttpResponseRedirect
@@ -7,6 +7,10 @@ from django.contrib.auth import authenticate, login,logout
 from .models import *
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+import stripe
+
+#in production this should be in an environment variable not displayed here in code
+stripe.api_key = 'sk_test_51N5oozJkQqpUUj2jyWiZCh7zwHh0vAXburItBiJES8oJUA18ypL2DtC6fG7BLLef3Mo0c9zyTqvgWSFxKgb7Hux500T2C2RaMZ'
 
 # Create your views here.
 def index(request):
@@ -14,6 +18,90 @@ def index(request):
 
 def pay(request):
     return render(request,'fitmaxapp/pay.html',{})
+
+def plan(request,pk):
+     plan = get_object_or_404(FitnessPlan,pk=pk)
+     if plan.premium:
+          if request.user.is_authenticated:
+               try:
+                    if request.user.customer.membership:
+                         return render(request,'fitmaxapp/pay.html',{'plan':plan})
+               except Customer.DoesNotExist:
+                    return render(request,'fitmaxapp',{})
+          else:
+               return render(request,'fitmaxapp/pay.html')
+     return render(request,'fitmaxapp/pay.html',{})
+
+                    
+   
+    
+@login_required(login_url='fitMax:login-required') 
+def checkout(request):
+    coupons = {'halloween':30,'welcome':20}
+    if request.method != 'POST':
+                            
+                            if request.GET.get('stripeToken'):
+                                 
+                                 stripe_customer = stripe.Customer.create( email = request.user.email,source = request.GET['stripeToken'])
+                                 plan = 'price_1N5oqrJkQqpUUj2jEBKkW5EJ'
+                                 if request.GET['plan'] == 'yearly':
+                                      plan = 'price_1N5oqrJkQqpUUj2jLqodgX7T'
+                                 if request.GET['coupon'] in coupons:
+                                      percentage = coupons[request.GET['coupon'].lower()]
+                                      try:
+                                           
+                                           coupon = stripe.Coupon.create(duration = 'once',id = request.GET['coupon'].lower(),percentage_off = percentage)
+                                      except:
+                                           pass
+                                      subscription = stripe.Subscription.create(customer=stripe_customer.id,items=[{'plan':plan}],coupon = request.GET['coupon'].lower())
+                                 else:
+                                      subscription = stripe.Subscription.create(customer=stripe_customer.id,items=[{'plan':plan}])
+
+                                 customer = Customer()
+                                 customer.user = request.user
+                                 customer.stripeid = stripe_customer.id
+                                 customer.membership = True
+                                 customer.cancel_at_period_end = False
+                                 customer.stripe_subscription_id = subscription.id
+                                 customer.save()
+                                 messages.success(request,'Your Purchase has been completed successfully')
+                                 return HttpResponseRedirect(reverse('fitMax:index'))
+                            
+                            plan = 'monthly'
+                            coupon = 'none'
+                            price = 100
+                            og_dollar = 0
+                            coupon_dollar = 0
+                            final_dollar = 10
+
+                            if request.GET.get('plan'):
+                                 if request.GET['plan'] == 'yearly':
+                                      plan = 'yearly'
+                                      price = 10000
+                                      og_dollar = 100
+                                      final_dollar = 100
+
+                            if request.GET.get('coupon'):
+                                 if request.GET['coupon'].lower() in coupons:
+                                      coupon = request.GET['coupon'].lower()
+                                      percentage = coupons[coupon]
+                                      coupon_price = int((percentage/100) * price)
+                                      price = price - coupon_price
+                                      coupon_dollar = str(coupon_price)[:-2] + '.' + str(coupon_price)[-2:]
+                                      final_dollar = str(price)[:-2] + '.' + str(price)[-2:]
+
+                            return render(request,'fitmaxapp/checkout.html',
+                                          {'plan':plan,
+                                           'coupon':coupon,
+                                           'price':price,
+                                           'og_dollar':og_dollar,
+                                           'coupon_dollar':coupon_dollar,
+                                           'final_dollar':final_dollar
+                                           }
+                                          )
+    else:
+        messages.success(request,'Your Purchase has been completed successfully')
+        return HttpResponseRedirect(reverse('fitMax:index'))
 
 
 

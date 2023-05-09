@@ -1,0 +1,22 @@
+{%extends 'fitmaxapp/base.html'%}
+
+
+{%block barner%}
+
+<form>
+    <script
+    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+    data-key = "pk_test_51N5oozJkQqpUUj2j7Rya94Hd6zi6fqnptC4XuBlygjr4dMMWu4gBEdU3GMuioCVJhnjabgVMjAFy5JtPqp6NCmMx00LY8v3GC7"
+    data-amount = "{{price}}"
+    data-name="{{user.first_name}} {{user.last_name}} john"
+    data-description="premium membership - {{plan}}"
+    data-email="{{user.email}}"
+    data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+    data-locale="auto"
+    ></script>
+    <input type="hidden" value="{{plan}}" name="plan"/>
+    <input type="hidden" value="{{coupon}}" name="coupon"/>
+</form>
+
+
+{%endblock%}
