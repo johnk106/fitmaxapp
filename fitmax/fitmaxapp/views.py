@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login,logout
 from .models import *
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required,user_passes_test
 import stripe
-
+from django.http import HttpResponse
 #in production this should be in an environment variable not displayed here in code
 stripe.api_key = 'sk_test_51N5oozJkQqpUUj2jyWiZCh7zwHh0vAXburItBiJES8oJUA18ypL2DtC6fG7BLLef3Mo0c9zyTqvgWSFxKgb7Hux500T2C2RaMZ'
 
@@ -102,7 +102,19 @@ def checkout(request):
     else:
         messages.success(request,'Your Purchase has been completed successfully')
         return HttpResponseRedirect(reverse('fitMax:index'))
+@user_passes_test(lambda u: u.is_superuser)
+def updateaccounts(request):
+     customers = Customer.objects.all()
+     for customer in customers:
+          subscription = stripe.Subscription.retrieve(customer.stripe_subscription_id)
+          if subscription.status != 'active':
+               customer.membership = False
 
+          else:
+               customer.membership = True
+          customer.cancel_at_period_end = subscription.cancel_at_period_end
+          customer.save()
+          return HttpResponse('completed')
 def settings(request):
      membership = False
      cancel_at_period_end =False

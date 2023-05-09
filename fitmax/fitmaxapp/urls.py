@@ -11,5 +11,6 @@ urlpatterns = [
     path('auth/logout',views.logout_view,name = 'logout'),
     path('login-required/',views.required,name = 'login-required'),
     path('checkout/',views.checkout,name='checkout'),
-    path('settings/',views.settings,name='settings')
+    path('settings/',views.settings,name='settings'),
+    path('updateaccounts/',views.updateaccounts,name='updates accounts')
 ]
