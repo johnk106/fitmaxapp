@@ -1,0 +1,22 @@
+{%extends 'fitmaxapp/base.html'%}
+{%block barner%}
+
+<div class="container">
+    {%if cancel_at_period_end%}
+
+    your membership will run to the end of your billing cycle
+
+    {%elif membership%}
+
+    <form action ="{%url 'fitMax:settings'%}" method="post">
+        {%csrf_token%}
+        <input type="submit" value="cancel membership">
+    </form>
+
+    {%else%}
+
+    <a href="{%url 'fitMax:pay'%}">Get a membership</a>
+
+    {%endif%}
+</div>
+{%endblock%}

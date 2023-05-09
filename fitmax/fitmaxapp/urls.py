@@ -10,5 +10,6 @@ urlpatterns = [
     path('auth/sign-up/',views.sign_up,name = 'sign_up'),
     path('auth/logout',views.logout_view,name = 'logout'),
     path('login-required/',views.required,name = 'login-required'),
-    path('checkout/',views.checkout,name='checkout')
+    path('checkout/',views.checkout,name='checkout'),
+    path('settings/',views.settings,name='settings')
 ]
